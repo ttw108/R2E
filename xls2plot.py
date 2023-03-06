@@ -7,19 +7,24 @@ import xlwings as xw
 import re
 import string
 import pandas as pd
+import win32api
 
+# 获取鼠标当前的位置
+x, y = win32api.GetCursorPos()
 root = tk.Tk()
 root.withdraw()
-print(root.tk.exprstring('$tcl_library'))
-print(root.tk.exprstring('$tk_library'))
+# 创建一个 Toplevel 窗口
+dialog = tk.Toplevel(root)
+
+
 
 def proc_data():
     global plt
     # Create an input dialog
-    strategies= simpledialog.askstring("Input", "要畫的_策略名稱",parent=root)
+    strategies= simpledialog.askstring("Input", "要畫的_策略名稱",parent=dialog)
+    dialog.withdraw()
     strategies=[int(i) for i in strategies.split(' ')]
     strategies = list(map(str, strategies))
-
     #將bookmark開啟
     def num_to_col(num):
         """將數字轉換為Excel欄位的英文命名法"""
@@ -93,7 +98,13 @@ def proc_data():
     ax.xaxis.label.set_color('blue')
     ax.yaxis.label.set_color('blue')
     ax.tick_params(axis='both', labelsize=5)
+    def on_key_press(event):
+        if event.key == "escape":
+            plt.close()
+    plt.connect("key_press_event", on_key_press)
     plt.show(block=True)
+    x, y = win32api.GetCursorPos()
+    dialog.geometry(f"+{x}+{y}")
 proc_data()
 
 # 程序開始運行

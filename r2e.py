@@ -448,19 +448,19 @@ def sqn_f():
     mmse_df = mmse_df.sort_values(by='Weight', ascending=False)
     global mmse7
     mmse7 = mmse_df.iloc[0:hf]
-    mmse7 = mmse7[mmse7['Weight'] > 0.01]
+    mmse7 = mmse7[mmse7['Weight'] > 0.05]
 
     mp_mmse_df = pd.DataFrame({'Strategy': np.arange(1, w.shape[0] + 1), 'Weight': w})
     mp_mmse_df = mp_mmse_df.sort_values(by='Weight', ascending=False)
     global mp_mmse7
     mp_mmse7 = mp_mmse_df.iloc[0:hf]
-    mp_mmse7 = mp_mmse7[mp_mmse7['Weight'] > 0.01]
+    mp_mmse7 = mp_mmse7[mp_mmse7['Weight'] > 0.05]
 
     sqn_df = pd.DataFrame({'Strategy': np.arange(1, ws.shape[0] + 1), 'Weight': ws})
     sqn_df = sqn_df.sort_values(by='Weight', ascending=False)
     global sqn7
     sqn7 = sqn_df.iloc[0:hf]
-    sqn7 = sqn7[sqn7['Weight'] > 0.01]
+    sqn7 = sqn7[sqn7['Weight'] > 0.05]
     # 将所有列名中的 ".0" 替换为 ""
     dfa_s = dfa.copy()
     dfa_s.rename(columns=lambda x: x.replace('.0', ''), inplace=True)
@@ -496,7 +496,7 @@ def sqn_f():
     sqn30_df = sqn30_df.sort_values(by='Weight', ascending=False)
     global sqn7_30
     sqn7_30 = sqn30_df.iloc[0:hf]
-    sqn7_30 = sqn7_30[sqn7_30['Weight'] > 0.01]
+    sqn7_30 = sqn7_30[sqn7_30['Weight'] > 0.05]
 
     dfa_s30 = dfa.copy()
     dfa_s30.rename(columns=lambda x: x.replace('.0', ''), inplace=True)
@@ -750,10 +750,6 @@ def pca_f():
     sht_pic.pictures.add(pic_path)
     # 删除临时文件
     os.remove('temp.png')
-
-
-
-
 
 ##################################################################
 ##################################################################
