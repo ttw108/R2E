@@ -11,6 +11,28 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 import numpy as np
 
+
+def find_regex_value(sht1, regex_str1, r, c):
+    all_rows=1000
+    all_columns=300
+    for row in range(1,all_rows):
+        for col in range(1,all_columns):
+            if sht1.cells(row,col).value is not None :
+                if re.match(regex_str1, str(sht1.cells(row,col).value)):
+                    return (sht1.cells(row + r, col + c).value)
+
+def find_regex_rc(sht1, regex_str1):
+    all_rows=1000
+    all_columns=300
+    for row in range(1,all_rows):
+        for col in range(1,all_columns):
+            if sht1.cells(row,col).value is not None :
+                if re.match(regex_str1, str(sht1.cells(row,col).value)):
+                #if cell.value == findtext:
+                    print(sht1.cells(row,col).row)
+                    print(sht1.cells(row,col).column)
+                    return ([sht1.cells(row,col).row, sht1.cells(row,col).column])
+
 def num_to_col(num):
     """將數字轉換為Excel欄位的英文命名法"""
     col = ''
@@ -23,10 +45,14 @@ def num_to_col(num):
 def open_xlsx():
     # 打開一個新的Excel文件
     global wb
-    app = xw.App(visible=True, add_book=False)
+    app = xw.App(add_book=False)
     app.display_alerts = False
     app.screen_updating = True
     wb = xw.Book('book.xlsx')
+    wb.app.visible = False
+    wb.app.screen_updating = False
+    # 禁用 Excel 的自动计算功能
+    wb.app.calculation = 'manual'
     global sht_profit
     if not 'profit' in wb.sheet_names:
         sht_profit = wb.sheets.add('profit')
@@ -382,6 +408,7 @@ def corr_f():
     global dfb,dfaa,dfab,dfac,dfad, dfaa_cumsum,dfab_cumsum,dfac_cumsum,dfad_cumsum
     global sqn_aa_best,sqn_ab_best,sqn_ac_best,sqn_ad_best,hf,sqn_aa2ad_cumsum,sqn_aa2ad_lis
     global dfaa_cumsum_all,dfaa_cumsum_all2,sqn_a2d,sqn_a2d,sqn_a2d_lis,sqn_a2d_cumsum,sqn_a2d_cumsum_all
+    global sqn_aa_b
     dfaa=dfa.iloc[-90:,:]
     dfab=dfa.iloc[-110:-20,:]
     dfac = dfa.iloc[-130:-40, :]
@@ -455,6 +482,7 @@ def corr_f():
     # 计算累积总和
     dfaa_cumsum_all=dfaa_cumsum.copy()
     dfaa_cumsum_all.columns = dfaa_cumsum_all.columns.astype(str)
+    sqn_aa_b=list(map(str, sqn_aa_best.Strategy.tolist()))
     dfaa_cumsum_all=dfaa_cumsum_all.loc[:,list(map(str,sqn_aa_best.Strategy.tolist()))]
     dfaa_cumsum_all2=dfaa_cumsum_all.sum(axis=1)
 
@@ -510,6 +538,57 @@ def pca_f(df_, color_list, label_dict,color):
     # 绘制主成分分析结果散点图
     # 设置绘图区域的背景色为淡黄色
     plt.figure(figsize=(6, 4))
+    # 绘制 sqn7 的策略点
+    #plt.scatter(pca.components_[0], pca.components_[1], c='red', s=30, marker='o', facecolors='none')
+    # 添加坐标轴标签
+    plt.title('PCA_{}'.format(color_list), fontsize=12)
+    plt.xlabel('PC1')
+    plt.ylabel('PC2')
+    # 添加每个交易策略的标签
+    strategies = list(returns.columns)
+    #color_list=sqn_a1_lis1
+    # strategies = [x[:-2] if x.endswith('.0') else x for x in strategies]
+    for i, strategy in enumerate(strategies):
+        if strategy in color_list:
+            plt.scatter(pca.components_[0][i], pca.components_[1][i], c='red', s=20, marker='o', facecolors='none')
+        else:
+            plt.scatter(pca.components_[0][i], pca.components_[1][i], c='blue', s=10, marker='o', facecolors='none')
+        #plt.annotate(strategy, (pca.components_[0][i], pca.components_[1][i]), color='blue', fontsize=12)
+        # 检查该策略的标签是否在label_dict中，如果是，则使用label_dict中的新标签
+        if strategy in label_dict:
+            label = strategy
+            plt.annotate(label, (pca.components_[0][i], pca.components_[1][i]), color=color, fontsize=18)
+        else:
+            label = strategy
+            plt.annotate(label, (pca.components_[0][i], pca.components_[1][i]), color='gray', fontsize=10)
+        # 显示图形
+        # 設置座標軸的格線顏色
+    plt.grid(color='#D3D3D3')
+    # 将绘图区域的背景色改为淡黄色
+    plt.gca().set_facecolor('#ffffcc')
+    pp = plt.plot
+    plt.tight_layout()
+
+def pca_f_big(df_, color_list, label_dict,color):
+    from sklearn.preprocessing import MaxAbsScaler
+    #returns = df_
+    # 創建MaxAbsScaler對象
+    scaler = MaxAbsScaler()
+    # 對稀疏數據進行標準化
+    data_scaled = scaler.fit_transform(df_)
+    returns = pd.DataFrame(data_scaled, columns=df_.columns)
+    pca = PCA()
+    pca.fit(returns)
+    #plt.tight_layout()
+    # 输出主成分分析结果
+    print('Explained variance ratio:', pca.explained_variance_ratio_)
+    print('Principal components:', pca.components_)
+    cc = pca.components_
+    # 就此結果PCA繪圖
+    import matplotlib.pyplot as plt
+    # 绘制主成分分析结果散点图
+    # 设置绘图区域的背景色为淡黄色
+    plt.figure(figsize=(12, 10))
     # 绘制 sqn7 的策略点
     #plt.scatter(pca.components_[0], pca.components_[1], c='red', s=30, marker='o', facecolors='none')
     # 添加坐标轴标签
@@ -799,7 +878,7 @@ dfaa_cumsum_()
 ################################################################
 #波動SQN、累積SQN及第一段（90日）優良策略至少出現2次的。
 # 将三个列表合并为一个集合
-set1 = set(sqn_a1_lis1) #A段best
+set1 = set(sqn_aa_b) #A段best
 set2 = set(sqn_aa2ad_lis) #累積SQN_Best
 set3 = set(sqn_a2d_lis)#波動A:D
 union_set = set1.union(set2, set3)
@@ -825,7 +904,7 @@ plt.figure(figsize=(10, 8))
 #sns.lineplot(x=sqnb1_sum_cumsum0.index, y=sqnb1_sum_cumsum0[:], data=sqnb1_sum_cumsum0, linestyle="-", color="red", label="abc_combined-{}")
 #sns.lineplot(x=sqnb2_sum_cumsum0.index, y=sqnb2_sum_cumsum0[:], data=sqnb2_sum_cumsum0, linestyle="--", color="gray", label="abc_Wcombined-{}")
 sns.lineplot(x=sqn_aa2ad_cumsum.index, y=sqn_aa2ad_cumsum[:], data=sqn_aa2ad_cumsum, linestyle=":", color="green", label="ABCD_Cum-{}".format(sqn_aa2ad_lis))
-sns.lineplot(x=dfaa_cumsum_all2.index, y=dfaa_cumsum_all2[:], data=dfaa_cumsum_all2, linestyle="-", color="red", label="Only_A_{}".format(sqn_a1_lis1))
+sns.lineplot(x=dfaa_cumsum_all2.index, y=dfaa_cumsum_all2[:], data=dfaa_cumsum_all2, linestyle="-", color="red", label="Only_A_{}".format(sqn_aa_b))
 sns.lineplot(x=sqn_a2d_cumsum.index, y=sqn_a2d_cumsum[:], data=sqn_a2d_cumsum, linestyle="--", color="blue", label="ABCD_Vola-{}".format(sqn_a2d_lis))
 sns.lineplot(x=set_all_collect_cumsum.index, y=set_all_collect_cumsum[:], data=set_all_collect_cumsum, linestyle="-", color="orange", label="Vola+Cumsum+SecA-{}".format(set_all))
 
@@ -870,8 +949,10 @@ pic.height *= 0.75
 pic.width *= 0.70
 ################################################################
 #圖2，dfaa 累積圖
+
 ws_source = wb.sheets['PCA_Tsne_Umap_cumcum']
 ws_target = wb.sheets['cum_vola_A']
+'''
 # 選擇工作表1和圖片1
 sht1 = wb.sheets['PCA_Tsne_Umap_cumcum']
 pic1 = sht1.pictures['dfaa']
@@ -883,6 +964,16 @@ sht2.api.Paste()
 rng=sht2.range("I2")
 ws_target.pictures[-1].top = rng.top
 ws_target.pictures[-1].left = rng.left
+'''
+#圖2：
+pca_f(dfaa_cumsum, sqn_aa_b, sqn_aa_b,'green')
+plt.tight_layout()
+# plt.show()
+plt.savefig('temp.png')
+plt.close()
+pic_path = (os.path.join(os.getcwd(), "temp.png"))
+ws_target.pictures.add(pic_path, name='a_cum', left=ws_target.range('I2').left, top=ws_target.range('I2').top)
+
 ######################################################
 ######################################################
 #圖3：
@@ -898,7 +989,7 @@ ws_target.pictures.add(pic_path, name='dfaa_V', left=ws_target.range('R2').left,
 ######################################################
 ######################################################
 #圖4：
-pca_f(dfaa, sqn_aa2ad_lis, sqn_aa2ad_lis,'green')
+pca_f(dfaa_cumsum, sqn_aa2ad_lis, sqn_aa2ad_lis,'green')
 plt.tight_layout()
 # plt.show()
 plt.savefig('temp.png')
@@ -909,13 +1000,29 @@ ws_target.pictures.add(pic_path, name='a2d_cum', left=ws_target.range('a23').lef
 ######################################################
 ######################################################
 #圖5：
-pca_f(dfaa, set_all, set_all,'orange')
+pca_f(dfaa_cumsum, set_all, set_all,'orange')
+# 設定 X 軸的左右邊界刻度
+plt.xlim([-0.2, 0.12])
+plt.ylim([-0.25, 0.1]) # 只顯示 X 軸大於等於 0，小於等於 3 的部分
 plt.tight_layout()
 # plt.show()
 plt.savefig('temp.png')
 plt.close()
 pic_path = (os.path.join(os.getcwd(), "temp.png"))
 ws_target.pictures.add(pic_path, name='a2d_V_cum_secA', left=ws_target.range('J23').left, top=ws_target.range('J23').top)
+
+#圖6：
+pca_f_big(dfaa_cumsum, set_all, set_all,'orange')
+# 設定 X 軸的左右邊界刻度
+plt.xlim([-0.2, 0.12])
+plt.ylim([-0.25, 0.1]) # 只顯示 X 軸大於等於 0，小於等於 3 的部分
+plt.tight_layout()
+# plt.show()
+plt.savefig('temp.png')
+plt.close()
+pic_path = (os.path.join(os.getcwd(), "temp.png"))
+ws_target.pictures.add(pic_path, name='a2d_V_cum_secA_big', left=ws_target.range('A44').left, top=ws_target.range('A44').top)
+
 
 ws_target.range('A1').value= "SQN權益比較圖"
 ws_target.range('i1').value= "SectionA__累積損益數據_最佳SQN圖"
@@ -930,56 +1037,20 @@ ws_target.range('R1').color = (0, 0, 255)
 ws_target.range('A22').color = (0, 255, 0)
 
 
+#把工作表1的策略名稱用DF的方式複製到cum_vola_A
+rng=wb.sheets['工作表1'].range('A96:B200').options(ndim=2).value
+df_name = pd.DataFrame(rng, columns=['num', 'filename'])
+ws_target.range('S22').options(index=False).value = df_name
+
+#選中的策略加顏色
+f_num=find_regex_rc(ws_target, "num")
+for ix in set_all:
+    ws_target.range("S{}".format(f_num[0]+int(ix))).color=(237, 175, 31)
+    ws_target.range("T{}".format(f_num[0] + int(ix))).color = (237, 175, 31)
+
+
+# 处理完成后，将屏幕更新和自动计算重新设置为 True
+wb.app.screen_updating = True
+wb.app.calculation = 'automatic'
 wb.save('book.xlsx')
-
-
-
-
-
-
-
-'''
-#################################################
-################################################################
-
-#選出平加總及加權加總的優良策略組合
-df_sqn_sort1=df_all.sort_values('abc_sum', ascending=False)
-hf=int(len(df_sqn_sort1)/2)#取策略的一半
-sqn_sun_best=df_sqn_sort1.iloc[:hf,:]
-sqn_sun_best= sqn_sun_best[sqn_sun_best['abc_sum']>0.05]
-
-df_sqn_sort2=df_all.sort_values('weighted_sum', ascending=False)
-sqn_wsun_best=df_sqn_sort2.iloc[:hf,:]
-sqn_wsun_best= sqn_sun_best[sqn_sun_best['weighted_sum']>0.05]
-
-##################################################
-##################################################
-sqn_lis1=sqn_sun_best['Strategy'].to_list()
-# 使用 map() 和 str() 函数将数字列表转换为字符串列表
-sqn_lis1 = list(map(str, sqn_lis1))
-sqnb1=dfa.loc[:,sqn_lis1]
-#sqnb1=sqnb1.tail(60)
-sqnb1_sum = sqnb1.groupby(sqnb1.columns, axis=1).sum().cumsum()
-# 计算累积总和
-sqnb1_sum_cumsum0 = sqnb1.sum(axis=1).cumsum()
-##################################################
-##################################################
-sqn_lis2=sqn_wsun_best['Strategy'].to_list()
-# 使用 map() 和 str() 函数将数字列表转换为字符串列表
-sqn_lis2 = list(map(str, sqn_lis2))
-sqnb2=dfa.loc[:,sqn_lis2]
-#sqnb2=sqnb2.tail(60)
-sqnb2_sum = sqnb2.groupby(sqnb2.columns, axis=1).sum().cumsum()
-# 计算累积总和
-sqnb2_sum_cumsum0 = sqnb2.sum(axis=1).cumsum()
-
-##################################################
-##################################################
-# 绘制折线图
-ax = sqnb1_sum.plot.line(linewidth=0.5, alpha=0.3)
-sqnb1_sum_cumsum0.plot.line(ax=ax, linewidth=1, color='red',alpha=0.4)
-sqnb2_sum_cumsum0.plot.line(ax=ax, linewidth=1, color='blue',alpha=0.4)
-plt.show()
-##################################################
-##################################################
-'''
+wb.app.visible = True

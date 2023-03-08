@@ -35,11 +35,15 @@ def proc_data():
         return col
 
     # 打開一個新的Excel文件
-    app=xw.App(visible=True,add_book=False)
+    app=xw.App(add_book=False)
     app.display_alerts=False
     app.screen_updating=False
     #wb = xw.Book()  # this will open a new workbook
     wb = xw.Book('book.xlsx')
+    wb.app.visible = False
+    wb.app.screen_updating = False
+    # 禁用 Excel 的自动计算功能
+    wb.app.calculation = 'manual'
     #wb=app.books.open('Book1.xlsx')
     sht=wb.sheets("工作表1")
     # 從當前工作表中取得第一個儲存格（A2）
@@ -81,7 +85,8 @@ def proc_data():
     import seaborn as sns
 
     # 繪製子策略折線圖
-    fig, ax = plt.subplots()
+    # 繪製子策略折線圖
+    fig, ax = plt.subplots(figsize=(8, 6))
     for col in dfa.columns:
         if col in strategies:
             ax.plot(dfa.index, dfa[col], label=col,lw=0.4)
@@ -98,14 +103,14 @@ def proc_data():
     ax.xaxis.label.set_color('blue')
     ax.yaxis.label.set_color('blue')
     ax.tick_params(axis='both', labelsize=5)
-    def on_key_press(event):
-        if event.key == "escape":
-            plt.close()
-    plt.connect("key_press_event", on_key_press)
+
+    def handle_key_press(event):
+        if event.key == ' ':
+            plt.close(event.canvas.figure)
+
+    # connect the key press event to the figure
+    fig.canvas.mpl_connect('key_press_event', handle_key_press)
     plt.show(block=True)
-    x, y = win32api.GetCursorPos()
-    dialog.geometry(f"+{x}+{y}")
-proc_data()
 
 # 程序開始運行
 while True:
